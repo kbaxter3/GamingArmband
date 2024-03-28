@@ -1,5 +1,10 @@
 #include <esp_now.h>
 #include <WiFi.h>
+#include <HardwareSerial.h>
+#define RXp2 8
+#define TXp2 7
+
+HardwareSerial MySerial1(1);
 
 // Structure to receive data, matches sender structure
 typedef struct struct_message {
@@ -28,6 +33,7 @@ void setup() {
   pinMode(10, OUTPUT);
   
   digitalWrite(10, HIGH);
+  
   delay(1000);
   digitalWrite(10, LOW);  
   delay(1000);
@@ -35,7 +41,10 @@ void setup() {
   // initialize serial port
   Serial.begin(115200);
   while (!Serial) delay(10);
-
+  
+  MySerial1.begin(115200, SERIAL_8N1, RXp2, TXp2);
+  while (!MySerial1) delay(10);
+  
   digitalWrite(10, HIGH);
   delay(1000);
   digitalWrite(10, LOW);  
@@ -55,6 +64,8 @@ void setup() {
   esp_now_register_recv_cb(OnDataRecv);
 
   Serial.println("setup");
+  MySerial1.println("ESP32 wifi up");
+  MySerial1.flush();
   digitalWrite(10, HIGH);
   delay(1000);
   digitalWrite(10, LOW);  
@@ -98,4 +109,9 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   printData("y_LinAccel", myData.y_LinAccel);
   printData("z_LinAccel", myData.z_LinAccel, true);
 
+//  for(int i = 0; i < 30; ++i) 
+//    MySerial1.print("Reciever Send");
+  MySerial1.println("Reciever Send");
+  MySerial1.flush();
+  delay(100);
 }
