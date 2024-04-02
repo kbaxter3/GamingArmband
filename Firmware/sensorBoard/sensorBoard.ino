@@ -27,6 +27,10 @@ typedef struct struct_message {
     float x_LinAccel;
     float y_LinAccel;
     float z_LinAccel;
+
+    float x_Gravity;
+    float y_Gravity;
+    float z_Gravity;
     
     float emgData;
     
@@ -113,7 +117,7 @@ void setup() {
 
 void loop() {
   //define variables
-  sensors_event_t orientationData , angVelocityData , linearAccelData;
+  sensors_event_t orientationData , angVelocityData , linearAccelData, gravityData;
   uint16_t emgData;
 
   // get and print EMG data to Serial monitor
@@ -124,12 +128,13 @@ void loop() {
   bno.getEvent(&orientationData, Adafruit_BNO055::VECTOR_EULER);
   bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE);
   bno.getEvent(&linearAccelData, Adafruit_BNO055::VECTOR_LINEARACCEL);
-
+  bno.getEvent(&gravityData, Adafruit_BNO055::VECTOR_GRAVITY);
+  
   // store orientation data to send
   myData.x_Orientation = orientationData.orientation.x;
   myData.y_Orientation = orientationData.orientation.y;
   myData.z_Orientation = orientationData.orientation.z;
-
+  
   // store gyro data to send
   myData.x_Gyro = angVelocityData.gyro.x;
   myData.y_Gyro = angVelocityData.gyro.y;
@@ -139,6 +144,11 @@ void loop() {
   myData.x_LinAccel = linearAccelData.acceleration.x;
   myData.y_LinAccel = linearAccelData.acceleration.y;
   myData.z_LinAccel = linearAccelData.acceleration.z;
+
+  // store gravity data to send
+  myData.x_Gravity = gravityData.acceleration.x;
+  myData.y_Gravity = gravityData.acceleration.y;
+  myData.z_Gravity = gravityData.acceleration.z;
 
   // Send message via ESP-NOW
   esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &myData, sizeof(myData));
