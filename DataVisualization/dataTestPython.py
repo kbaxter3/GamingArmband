@@ -25,7 +25,7 @@ screen_width = 1600
 screen_height = 900
 
 # Define global variables
-EMG_DATA_SIZE = screen_width - 100  # Assuming 100 samples per second for x seconds
+EMG_DATA_SIZE = screen_width - 100  # Assuming 100 samples per second for 5 seconds
 emg_data_buffer = deque(maxlen=EMG_DATA_SIZE)
 x_scale_factor = EMG_DATA_SIZE / 100  # Adjust the scale factor as needed
 
@@ -44,16 +44,16 @@ class DataSample:
 
 
 # @William job
-def initGraphics():
+def initGraphicsEMG():
     pygame.init()
     screen = pygame.display.set_mode((screen_width, screen_height))
-    pygame.display.set_caption("Live Data Visualization")
+    pygame.display.set_caption("Live EMG Data Visualization")
     pygame.display.flip()
     return screen, True
 
 
 # @William job
-def updateGraphics(screen, dataPoint):
+def updateGraphicsEMG(screen, dataPoint):
     if screen is None:
         return
 
@@ -83,24 +83,27 @@ def draw_emg_graph(screen):
     graph_width = screen_width - x_margin
     graph_height = screen_height - y_margin
 
-    pygame.draw.line(screen, (255, 255, 255), (graph_top_left_x, graph_top_left_y + graph_height / 2),
-                     (graph_top_left_x + graph_width - x_margin, graph_top_left_y + graph_height / 2), 2)  # X-axis
+    pygame.draw.line(screen, (255, 255, 255), (graph_top_left_x, graph_top_left_y + graph_height - 50),
+                     (graph_top_left_x + graph_width - x_margin, graph_top_left_y + graph_height - 50), 2)  # X-axis
     pygame.draw.line(screen, (255, 255, 255), (graph_top_left_x, graph_top_left_y),
                      (graph_top_left_x, graph_top_left_y + graph_height - y_margin), 2)  # Y-axis
 
-    font = pygame.font.SysFont('Arial', 20)
+    font_label = pygame.font.SysFont('Arial', 20)
+    font_title = pygame.font.SysFont('Arial', 30)
 
-    label_y = font.render('EMG', True, (255, 255, 255))
-    label_x = font.render('Time', True, (255, 255, 255))
+    title = font_title.render('EMG Live Data', True, (255, 255, 255))
+    label_y = font_label.render('Relative EMG Signal', True, (255, 255, 255))
+    label_x = font_label.render('Time', True, (255, 255, 255))
     screen.blit(label_y, (graph_top_left_x + 10, graph_top_left_y))
-    screen.blit(label_x, (graph_top_left_x + graph_width - 50, graph_top_left_y + graph_height / 2 + 5))
+    screen.blit(label_x, (graph_top_left_x + graph_width - 50, graph_top_left_y + graph_height - 50))
+    screen.blit(title, (graph_top_left_x + screen_width / 2 - 100, graph_top_left_y))
 
-    emg_points = list(emg_data_buffer)
-    max_emg_value = max(emg_points) if emg_points else 0
-    min_emg_value = min(emg_points) if emg_points else 0
+    # emg_points = list(emg_data_buffer)
+    max_emg_value = 1
+    min_emg_value = 0
 
-    max_val_label = font.render(f'{max_emg_value:.2f}', True, (255, 255, 255))
-    min_val_label = font.render(f'{min_emg_value:.2f}', True, (255, 255, 255))
+    max_val_label = font_label.render(f'{max_emg_value:.2f}', True, (255, 255, 255))
+    min_val_label = font_label.render(f'{min_emg_value:.2f}', True, (255, 255, 255))
 
     screen.blit(max_val_label, (graph_top_left_x + 5, graph_top_left_y + 30))
     screen.blit(min_val_label, (graph_top_left_x + 5, graph_top_left_y + graph_height - 50))
@@ -185,8 +188,8 @@ def testReadData(oldData):
 # arduino = serial.Serial(port='COM3', baudrate=115200, timeout=.1) 
 
 
-screen, window_created = initGraphics()
-if not window_created:
+screen_emg, window_emg_created = initGraphicsEMG()
+if not window_emg_created:
     print("Failed to create Pygame window")
     exit()
 
@@ -199,6 +202,6 @@ while running:
             running = False
 
     data = testReadData(data)
-    updateGraphics(screen, data)
+    updateGraphicsEMG(screen_emg, data)
 
 pygame.quit()
