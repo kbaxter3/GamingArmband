@@ -8,8 +8,10 @@
 
 int EMG_ON_CUTOFF = 1000;
 int EMG_OFF_CUTOFF = 400;
-int SHORT_PULSE_CUTOFF = 3000;
-int LONG_PULSE_CUTOFF = 5000;
+int MIN_PULSE_CUTOFF = 300;
+int SHORT_PULSE_CUTOFF = 1000;
+int SHORT_PULSE_INTERVAL_CUTOFF = 2000;
+int LONG_PULSE_CUTOFF = 1000;
 int ANGLE_DEADBAND = 10;
 
 int keyboard_mode = 1;
@@ -19,10 +21,11 @@ HardwareSerial MySerial1(1);
 // structure to determine emg on off pulses
 typedef struct emg_pulses {
   
-  unsigned long last_pulse_start;
-  unsigned long last_pulse_end;
+  unsigned int last_pulse_start;
+  unsigned int last_pulse_end;
   float last_emg_reading;
   int num_pulses;
+  bool emg_on;
   
 } emg_pulses_t;
 
@@ -49,7 +52,7 @@ typedef struct struct_message {
 } struct_message;
 
 struct_message myData;
-emg_pulses_t emg_pulses;
+emg_pulses_t emg_pulses{ .emg_on = false};
 
 void printData(char *dataName, int value, bool isEnd = false);
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len);
@@ -145,38 +148,57 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
     up_down_arrows(myData.x_Orientation, myData.y_Orientation, myData.z_Orientation, 
       myData.x_Gravity, myData.y_Gravity, myData.z_Gravity);
   }
+  printData("keyboardMode", keyboard_mode, true);
   
   delay(100);
 }
 
 void update_pulses(emg_pulses_t* emg_ptr, int emg_reading) {
-  int current_time = millis();
+  unsigned int current_time = millis();
   
-  if(emg_reading > EMG_ON_CUTOFF){
-    
-    if(emg_ptr->last_emg_reading < EMG_ON_CUTOFF) {
-
+  if(emg_reading > EMG_ON_CUTOFF && !emg_ptr->emg_on) {
+      // emg just turned on
       emg_ptr->last_pulse_start = current_time;
+      emg_ptr->emg_on = true;
       
-    } else if(current_time - emg_ptr->last_pulse_start > LONG_PULSE_CUTOFF) {
-      // actions for long pulse
+  } else if(emg_ptr->emg_on && emg_reading < EMG_OFF_CUTOFF){
+    // emg just turned off
+    emg_ptr->emg_on = false;
+    unsigned int pulse_length = current_time - emg_ptr->last_pulse_start;
+    
+    if(pulse_length < SHORT_PULSE_CUTOFF && pulse_length > MIN_PULSE_CUTOFF) {
+      // pulse was a short pulse
+      Serial.print("\nShort pulse: ");
+      Serial.println(pulse_length);
+      emg_ptr->num_pulses++;
+
+      if(emg_ptr->num_pulses > 1){
+        //two short pulses
+        if(current_time - emg_ptr->last_pulse_end < SHORT_PULSE_INTERVAL_CUTOFF){
+          // two short pulses in a short time, switch keyboard mode on / off
+          if(keyboard_mode == 0) keyboard_mode = 1;
+          else if(keyboard_mode == 1) keyboard_mode = 0;
+        } else {
+          // two short pulses in a long amount of time
+          emg_ptr->num_pulses = 1;
+        }
+      }
+    } else if(pulse_length > MIN_PULSE_CUTOFF){
+      // pulse was not a short pulse
+      emg_ptr->num_pulses = 0;
+      
+      Serial.print("\nLong pulse: ");
+      Serial.println(pulse_length);;
     }
-  }
-
-  if(emg_reading < EMG_OFF_CUTOFF && emg_ptr->last_emg_reading > EMG_OFF_CUTOFF){
-
-    if(emg_ptr->num_pulses > 1 && (current_time - emg_ptr->last_pulse_end < SHORT_PULSE_CUTOFF)) {
-      // actions for two short pulses
-      
-      if(keyboard_mode == 0) keyboard_mode = 1;
-      if(keyboard_mode == 1) keyboard_mode = 0;
-      
-    }
-
-    emg_ptr->num_pulses++;
     
     emg_ptr->last_pulse_end = current_time;
   }
+
+  if(emg_ptr->emg_on && current_time - emg_ptr->last_pulse_start > LONG_PULSE_CUTOFF) {
+    // actions during a long pulse
+    Serial.println("\nLong pulse actions");
+    
+  } 
   
   emg_ptr->last_emg_reading = emg_reading;
 }
@@ -199,7 +221,7 @@ void up_down_arrows(float x, float y, float z, float grav_x, float grav_y, float
     MySerial1.flush();
   }
 
-  printData("keyboardMode", keyboard_mode);
-  printData("angle", angle, true);
+  
+  printData("angle", angle);
   
 }
