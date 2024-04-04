@@ -23,7 +23,6 @@ void setup() {
   Serial1.println("yay");
 }
 
-
 void loop() {
   // put your main code here, to run repeatedly:
   if(Serial1.available()) { 

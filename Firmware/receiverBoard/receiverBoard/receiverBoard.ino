@@ -10,10 +10,13 @@ int EMG_ON_CUTOFF = 1000;
 int EMG_OFF_CUTOFF = 400;
 int MIN_PULSE_CUTOFF = 300;
 int SHORT_PULSE_CUTOFF = 1000;
-int SHORT_PULSE_INTERVAL_CUTOFF = 2000;
-int LONG_PULSE_CUTOFF = 1000;
-int ANGLE_DEADBAND = 10;
+int SHORT_PULSE_INTERVAL_CUTOFF = 3000;
+int LONG_PULSE_CUTOFF = 4000;
+int ANGLE_DEADBAND = 5;
+int ANGLE_CENTER = 35;
+int HIGH_SAMPLE_CUTOFF = 4;
 
+int emg_high_counter = 0;
 int keyboard_mode = 1;
 
 HardwareSerial MySerial1(1);
@@ -147,6 +150,9 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   if(keyboard_mode == 1) {
     up_down_arrows(myData.x_Orientation, myData.y_Orientation, myData.z_Orientation, 
       myData.x_Gravity, myData.y_Gravity, myData.z_Gravity);
+  } else {
+    MySerial1.write("n");
+    MySerial1.flush();
   }
   printData("keyboardMode", keyboard_mode, true);
   
@@ -156,10 +162,21 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
 void update_pulses(emg_pulses_t* emg_ptr, int emg_reading) {
   unsigned int current_time = millis();
   
-  if(emg_reading > EMG_ON_CUTOFF && !emg_ptr->emg_on) {
-      // emg just turned on
+  if(emg_high_counter != 0) {
+    // make sure enough high samples before triggering a pulse
+    if(emg_reading < EMG_ON_CUTOFF) emg_high_counter = 0;
+    else emg_high_counter++;
+
+    if(emg_high_counter > HIGH_SAMPLE_CUTOFF) {
+      // treat as pulse start
       emg_ptr->last_pulse_start = current_time;
       emg_ptr->emg_on = true;
+      emg_high_counter = 0;
+    }
+    
+  } else if(emg_reading > EMG_ON_CUTOFF && !emg_ptr->emg_on) {
+      // emg just turned on
+      emg_high_counter = 1;
       
   } else if(emg_ptr->emg_on && emg_reading < EMG_OFF_CUTOFF){
     // emg just turned off
@@ -178,6 +195,7 @@ void update_pulses(emg_pulses_t* emg_ptr, int emg_reading) {
           // two short pulses in a short time, switch keyboard mode on / off
           if(keyboard_mode == 0) keyboard_mode = 1;
           else if(keyboard_mode == 1) keyboard_mode = 0;
+          emg_ptr->num_pulses = 0;
         } else {
           // two short pulses in a long amount of time
           emg_ptr->num_pulses = 1;
@@ -210,10 +228,10 @@ void up_down_arrows(float x, float y, float z, float grav_x, float grav_y, float
   
   float angle = acos(cos_angle) * 180 / M_PI;
 
-  if(angle > 90 + ANGLE_DEADBAND) {
+  if(angle > ANGLE_CENTER + ANGLE_DEADBAND) {
     MySerial1.write("u");
     MySerial1.flush();
-  } else if(angle < 90 - ANGLE_DEADBAND) {
+  } else if(angle < ANGLE_CENTER - ANGLE_DEADBAND) {
     MySerial1.write("d");
     MySerial1.flush();
   } else {
