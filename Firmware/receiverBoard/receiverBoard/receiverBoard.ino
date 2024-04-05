@@ -6,14 +6,14 @@
 #define RXp2 8
 #define TXp2 7
 
-int EMG_ON_CUTOFF = 1000;
-int EMG_OFF_CUTOFF = 400;
+int EMG_ON_CUTOFF = 2000;
+int EMG_OFF_CUTOFF = 1000;
 int MIN_PULSE_CUTOFF = 300;
 int SHORT_PULSE_CUTOFF = 1000;
 int SHORT_PULSE_INTERVAL_CUTOFF = 3000;
 int LONG_PULSE_CUTOFF = 4000;
 int ANGLE_DEADBAND = 5;
-int ANGLE_CENTER = 35;
+int ANGLE_CENTER = 15;
 int HIGH_SAMPLE_CUTOFF = 4;
 
 int emg_high_counter = 0;
@@ -94,7 +94,7 @@ void setup() {
   // get recv packer info
   esp_now_register_recv_cb(OnDataRecv);
 
-  Serial.println("setup");
+  // Serial.println("setup");
   MySerial1.println("ESP32 wifi up");
   MySerial1.flush();
   digitalWrite(10, HIGH);
@@ -131,19 +131,19 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   printData("z_Orientation", myData.z_Orientation);
 
   // print gyro data to Serial monitor
-  // printData("x_Gyro", myData.x_Gyro);
-  // printData("y_Gyro", myData.y_Gyro);
-  // printData("z_Gyro", myData.z_Gyro);
+  printData("x_Gyro", myData.x_Gyro);
+  printData("y_Gyro", myData.y_Gyro);
+  printData("z_Gyro", myData.z_Gyro);
 
   // print linear acceleration data to Serial monitor
-  // printData("x_LinAccel", myData.x_LinAccel);
-  // printData("y_LinAccel", myData.y_LinAccel);
-  // printData("z_LinAccel", myData.z_LinAccel, true);
+  printData("x_LinAccel", myData.x_LinAccel);
+  printData("y_LinAccel", myData.y_LinAccel);
+  printData("z_LinAccel", myData.z_LinAccel);
 
   // print gravity data to Serial monitor
-  printData("x_Grav", myData.x_Gravity);
-  printData("y_Grav", myData.y_Gravity);
-  printData("z_Grav", myData.z_Gravity);
+  // printData("x_Grav", myData.x_Gravity);
+  // printData("y_Grav", myData.y_Gravity);
+  // printData("z_Grav", myData.z_Gravity, true);
 
   update_pulses(&emg_pulses, myData.emgData);
 
@@ -154,7 +154,8 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
     MySerial1.write("n");
     MySerial1.flush();
   }
-  printData("keyboardMode", keyboard_mode, true);
+  
+  digitalWrite(10, keyboard_mode);
   
   delay(100);
 }
@@ -185,8 +186,8 @@ void update_pulses(emg_pulses_t* emg_ptr, int emg_reading) {
     
     if(pulse_length < SHORT_PULSE_CUTOFF && pulse_length > MIN_PULSE_CUTOFF) {
       // pulse was a short pulse
-      Serial.print("\nShort pulse: ");
-      Serial.println(pulse_length);
+      // Serial.print("\nShort pulse: ");
+      // Serial.println(pulse_length);
       emg_ptr->num_pulses++;
 
       if(emg_ptr->num_pulses > 1){
@@ -205,8 +206,8 @@ void update_pulses(emg_pulses_t* emg_ptr, int emg_reading) {
       // pulse was not a short pulse
       emg_ptr->num_pulses = 0;
       
-      Serial.print("\nLong pulse: ");
-      Serial.println(pulse_length);;
+      // Serial.print("\nLong pulse: ");
+      // Serial.println(pulse_length);;
     }
     
     emg_ptr->last_pulse_end = current_time;
@@ -214,7 +215,7 @@ void update_pulses(emg_pulses_t* emg_ptr, int emg_reading) {
 
   if(emg_ptr->emg_on && current_time - emg_ptr->last_pulse_start > LONG_PULSE_CUTOFF) {
     // actions during a long pulse
-    Serial.println("\nLong pulse actions");
+    // Serial.println("\nLong pulse actions");
     
   } 
   
@@ -240,6 +241,6 @@ void up_down_arrows(float x, float y, float z, float grav_x, float grav_y, float
   }
 
   
-  printData("angle", angle);
+  // printData("angle", angle);
   
 }
