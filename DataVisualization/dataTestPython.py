@@ -5,7 +5,7 @@
 
 import os
 # Importing Libraries
-# import serial
+import serial
 
 import time
 import copy
@@ -21,9 +21,9 @@ from matplotlib.animation import FuncAnimation
 from mpl_toolkits.mplot3d import Axes3D
 
 # resolve mac errors
-f = open("/dev/null",  "w")
-os.dup2(f.fileno(), 2)
-f.close()
+# f = open("/dev/null",  "w")
+# os.dup2(f.fileno(), 2)
+# f.close()
 
 screen_width = 1600
 screen_height = 900
@@ -31,7 +31,7 @@ screen_height = 900
 # Define global variables
 EMG_DATA_SIZE = screen_width / 2  # Assuming 100 samples per second for 5 seconds
 emg_data_buffer = deque(maxlen=int(EMG_DATA_SIZE))
-x_scale_factor = EMG_DATA_SIZE / 100  # Adjust the scale factor as needed
+x_scale_factor = EMG_DATA_SIZE / 1  # Adjust the scale factor as needed
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
@@ -98,9 +98,9 @@ def updateGraphics(screen, dataPoint):
     pygame.draw.line(screen, (0, 255, 0), center_point, (center_point[0], center_point[1] + axis_length), 2)
     pygame.draw.line(screen, (0, 255, 0), center_point, (center_point[0], center_point[1] - axis_length), 2)
 
-    # Draw Z-axis (Blue) - Simulating 3D effect
-    pygame.draw.line(screen, (0, 0, 255), center_point, (center_point[0] + axis_length // 2, center_point[1] - axis_length // 2), 2)
-    pygame.draw.line(screen, (0, 0, 255), center_point, (center_point[0] - axis_length // 2, center_point[1] + axis_length // 2), 2)
+    # Draw Z-axis (White) - Simulating 3D effect
+    pygame.draw.line(screen, (255, 255, 255), center_point, (center_point[0] + axis_length // 2, center_point[1] - axis_length // 2), 2)
+    pygame.draw.line(screen, (255, 255, 255), center_point, (center_point[0] - axis_length // 2, center_point[1] + axis_length // 2), 2)
 
     # Update the display
     pygame.display.flip()
@@ -158,7 +158,7 @@ def draw_emg_graph(screen):
 
     # Draw lines connecting consecutive EMG data points
     for i in range(1, len(scaled_emg_points)):
-        pygame.draw.line(screen, (255, 255, 255), (i - 1 + graph_top_left_x, scaled_emg_points[i - 1] + scale_shift), (i + graph_top_left_x, scaled_emg_points[i] + scale_shift), 1)
+        pygame.draw.line(screen, (255, 255, 255), (i - 1 + graph_top_left_x, scaled_emg_points[i - 1] + scale_shift - max_emg_value), (i + graph_top_left_x, scaled_emg_points[i] + scale_shift - max_emg_value), 1)
 
 
 def calc_rotation(dataPoint):
@@ -204,8 +204,7 @@ def readData(serial):
         serialMsg = serial.readline()
 
     newDataValues = serialMsg.decode('ascii').split(',')
-
-    newData.emg = int(newDataValues[0].split(':')[1]) / 4096
+    newData.emg = int(newDataValues[0].split(':')[1]) / float(4096)
     newData.xOrientation = float(newDataValues[1].split(':')[1])
     newData.yOrientation = float(newDataValues[2].split(':')[1])
     newData.zOrientation = float(newDataValues[3].split(':')[1])
@@ -266,12 +265,18 @@ if not window_created:
 # Main loop
 running = True
 data = DataSample()
+# port_loc = self.builder.get_variable('port_location')
+# port = port_loc.get()
+ser = serial.Serial(port='/dev/cu.usbmodem1101', baudrate=115200, timeout=.01)
+# ser.baudrate(9600)
+# ser.port = "/dev.cu.usbmodem1101"
+# ser.open()
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-
-    data = testReadData(data)
+    temp = time.time()
+    data = readData(ser)
     updateGraphics(screen, data)
 
 pygame.quit()

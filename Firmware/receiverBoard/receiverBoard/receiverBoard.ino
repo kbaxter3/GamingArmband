@@ -124,21 +124,24 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   
   // print emg data
   printData("EMG_Data",myData.emgData);
-   
+  printData("OnCutoff", EMG_ON_CUTOFF);
+  printData("OffCutoff", EMG_OFF_CUTOFF);
+  printData("EMG Max", 4096, true);
+
   // print orientation data to Serial monitor
-  printData("x_Orientation", myData.x_Orientation);
-  printData("y_Orientation", myData.y_Orientation);
-  printData("z_Orientation", myData.z_Orientation);
+  // printData("x_Orientation", myData.x_Orientation);
+  // printData("y_Orientation", myData.y_Orientation);
+  // printData("z_Orientation", myData.z_Orientation);
 
   // print gyro data to Serial monitor
-  printData("x_Gyro", myData.x_Gyro);
-  printData("y_Gyro", myData.y_Gyro);
-  printData("z_Gyro", myData.z_Gyro);
+  // printData("x_Gyro", myData.x_Gyro);
+  // printData("y_Gyro", myData.y_Gyro);
+  // printData("z_Gyro", myData.z_Gyro);
 
   // print linear acceleration data to Serial monitor
-  printData("x_LinAccel", myData.x_LinAccel);
-  printData("y_LinAccel", myData.y_LinAccel);
-  printData("z_LinAccel", myData.z_LinAccel);
+  // printData("x_LinAccel", myData.x_LinAccel);
+  // printData("y_LinAccel", myData.y_LinAccel);
+  // printData("z_LinAccel", myData.z_LinAccel, true);
 
   // print gravity data to Serial monitor
   // printData("x_Grav", myData.x_Gravity);
